@@ -1,0 +1,189 @@
+   1 <?php
+   2 
+   3 namespace App\Filament\Admin\Resources;
+   4 
+   5 use App\Filament\Admin\Resources\UserResource\Pages\CreateUser;
+   6 use App\Filament\Admin\Resources\UserResource\Pages\EditUser;
+   7 use App\Filament\Admin\Resources\UserResource\Pages\ListUsers;
+   8 use App\Helpers\RoleHierarchy;
+   9 use App\Models\User;
+  10 use BackedEnum;
+  11 use Filament\Actions\BulkActionGroup;
+  12 use Filament\Actions\DeleteAction;
+  13 use Filament\Actions\DeleteBulkAction;
+  14 use Filament\Actions\EditAction;
+  15 use Filament\Forms\Components\Select;
+  16 use Filament\Forms\Components\TextInput;
+  17 use Filament\Resources\Resource;
+  18 use Filament\Schemas\Schema;
+  19 use Filament\Tables\Columns\TextColumn;
+  20 use Filament\Tables\Table;
+  21 use Illuminate\Database\Eloquent\Builder;
+  22 use Illuminate\Support\Facades\Auth;
+  23 use Spatie\Permission\Models\Role;
+  24 
+  25 class UserResource extends Resource
+  26 {
+  27     protected static ?string $model = User::class;
+  28 
+  29     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-users';
+  30 
+  31     protected static ?int $navigationSort = 2;
+  32 
+  33     protected static ?string $navigationLabel = 'Usuarios';
+  34 
+  35     protected static ?string $modelLabel = 'Usuario';
+  36 
+  37     protected static ?string $pluralModelLabel = 'Usuarios';
+  38 
+  39     public static function form(Schema $schema): Schema
+  40     {
+  41         return $schema->schema([
+  42             TextInput::make('name')
+  43                 ->label('Nombre')
+  44                 ->required()
+  45                 ->maxLength(255),
+  46 
+  47             TextInput::make('email')
+  48                 ->label('Correo Electrónico')
+  49                 ->email()
+  50                 ->required()
+  51                 ->maxLength(255)
+  52                 ->unique(User::class, 'email', ignoreRecord: true),
+  53 
+  54             TextInput::make('password')
+  55                 ->label('Contraseña')
+  56                 ->password()
+  57                 ->revealable()
+  58                 ->minLength(8)
+  59                 ->required(fn (string $operation): bool => $operation === 'create')
+  60                 ->dehydrated(fn (?string $state): bool => filled($state))
+  61                 ->dehydrateStateUsing(fn (string $state): string => bcrypt($state)),
+  62 
+  63             Select::make('roles')
+  64                 ->label('Rol')
+  65                 ->relationship('roles', 'name')
+  66                 ->options(fn () => static::getAssignableRoles())
+  67                 ->preload()
+  68                 ->searchable(),
+  69         ]);
+  70     }
+  71 
+  72     public static function table(Table $table): Table
+  73     {
+  74         return $table
+  75             ->columns([
+  76                 TextColumn::make('name')
+  77                     ->label('Nombre')
+  78                     ->searchable()
+  79                     ->sortable(),
+  80 
+  81                 TextColumn::make('email')
+  82                     ->label('Correo')
+  83                     ->searchable()
+  84                     ->sortable(),
+  85 
+  86                 TextColumn::make('roles.name')
+  87                     ->label('Rol')
+  88                     ->badge()
+  89                     ->color(fn (string $state): string => match ($state) {
+  90                         'super_admin' => 'danger',
+  91                         'admin'       => 'warning',
+  92                         'supervisor'  => 'info',
+  93                         'empleado'    => 'success',
+  94                         default       => 'gray',
+  95                     }),
+  96 
+  97                 TextColumn::make('created_at')
+  98                     ->label('Creado')
+  99                     ->dateTime('d/m/Y')
+ 100                     ->sortable()
+ 101                     ->toggleable(isToggledHiddenByDefault: true),
+ 102             ])
+ 103             ->filters([
+ 104                 //
+ 105             ])
+ 106             ->actions([
+ 107                 EditAction::make()
+ 108                     ->visible(fn (User $record): bool => static::canEditUser($record)),
+ 109 
+ 110                 DeleteAction::make()
+ 111                     ->visible(fn (User $record): bool => static::canEditUser($record)),
+ 112             ])
+ 113             ->bulkActions([
+ 114                 BulkActionGroup::make([
+ 115                     DeleteBulkAction::make(),
+ 116                 ]),
+ 117             ])
+ 118             ->defaultSort('name');
+ 119     }
+ 120 
+ 121     public static function getPages(): array
+ 122     {
+ 123         return [
+ 124             'index'  => ListUsers::route('/'),
+ 125             'create' => CreateUser::route('/create'),
+ 126             'edit'   => EditUser::route('/{record}/edit'),
+ 127         ];
+ 128     }
+ 129 
+ 130     /**
+ 131      * Solo mostramos usuarios cuyo nivel jerárquico es MENOR al del usuario autenticado.
+ 132      * El super_admin ve a todos los demás.
+ 133      */
+ 134     public static function getEloquentQuery(): Builder
+ 135     {
+ 136         $authUser = Auth::user();
+ 137         $query = parent::getEloquentQuery();
+ 138 
+ 139         // super_admin puede ver a todos
+ 140         if ($authUser->hasRole('super_admin')) {
+ 141             return $query->where('id', '!=', $authUser->id);
+ 142         }
+ 143 
+ 144         // Obtenemos el nivel del usuario actual
+ 145         $authLevel = RoleHierarchy::getUserLevel($authUser);
+ 146 
+ 147         // Solo mostramos usuarios con nivel menor (menor número = mayor poder)
+ 148         return $query
+ 149             ->where('id', '!=', $authUser->id)
+ 150             ->whereHas('roles', function (Builder $q) use ($authLevel) {
+ 151                 $q->whereIn('name', RoleHierarchy::getRolesBelowLevel($authLevel));
+ 152             });
+ 153     }
+ 154 
+ 155     /**
+ 156      * Roles que el usuario autenticado puede asignar (solo los de menor jerarquía)
+ 157      */
+ 158     public static function getAssignableRoles(): array
+ 159     {
+ 160         $authUser = Auth::user();
+ 161 
+ 162         if ($authUser->hasRole('super_admin')) {
+ 163             return Role::all()->pluck('name', 'id')->toArray();
+ 164         }
+ 165 
+ 166         $authLevel = RoleHierarchy::getUserLevel($authUser);
+ 167         $assignable = RoleHierarchy::getRolesBelowLevel($authLevel);
+ 168 
+ 169         return Role::whereIn('name', $assignable)->pluck('name', 'id')->toArray();
+ 170     }
+ 171 
+ 172     /**
+ 173      * Verifica si el usuario autenticado puede editar al usuario objetivo
+ 174      */
+ 175     public static function canEditUser(User $target): bool
+ 176     {
+ 177         $authUser = Auth::user();
+ 178 
+ 179         if ($authUser->hasRole('super_admin')) {
+ 180             return true;
+ 181         }
+ 182 
+ 183         $authLevel  = RoleHierarchy::getUserLevel($authUser);
+ 184         $targetLevel = RoleHierarchy::getUserLevel($target);
+ 185 
+ 186         // Solo puede editar si el objetivo tiene un nivel MAYOR (número mayor = menos poder)
+ 187         return $targetLevel > $authLevel;
+ 188     }
+ 189 }
