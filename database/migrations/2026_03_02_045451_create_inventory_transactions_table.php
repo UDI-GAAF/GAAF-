@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('inventory_transactions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete(); // materialId
+            $table->enum('tipoMovimiento', ['Entrada', 'Salida', 'Ajuste']); // tipoMovimiento
+            $table->decimal('cantidad', 10, 2); // decimal to support kg, l, etc.
+            $table->dateTime('fechaMovimiento');
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // usuarioResponsable
+            $table->text('observacion')->nullable();
             $table->timestamps();
         });
     }
