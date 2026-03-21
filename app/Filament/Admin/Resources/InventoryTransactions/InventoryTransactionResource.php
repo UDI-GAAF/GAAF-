@@ -20,7 +20,9 @@ class InventoryTransactionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $recordTitleAttribute = 'id';
+    protected static ?string $navigationLabel = 'Movimientos';
+    protected static ?string $modelLabel = 'Movimiento';
+    protected static ?string $pluralModelLabel = 'Movimientos';
 
     public static function form(Schema $schema): Schema
     {

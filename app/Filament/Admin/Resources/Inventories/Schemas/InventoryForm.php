@@ -1,7 +1,6 @@
 <?php
-
 namespace App\Filament\Admin\Resources\Inventories\Schemas;
-
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
@@ -11,13 +10,17 @@ class InventoryForm
     {
         return $schema
             ->components([
-                TextInput::make('product_id')
+                Select::make('product_id')
+                    ->relationship('product', 'nombre')
+                    ->searchable()
+                    ->preload()
                     ->required()
-                    ->numeric(),
+                    ->label('Producto'),
                 TextInput::make('cantidadDisponible')
                     ->required()
                     ->numeric()
-                    ->default(0.0),
+                    ->default(0.0)
+                    ->label('Cantidad Disponible'),
             ]);
     }
 }
