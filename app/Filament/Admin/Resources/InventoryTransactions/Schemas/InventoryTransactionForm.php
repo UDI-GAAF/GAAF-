@@ -1,15 +1,10 @@
 <?php
-
 namespace App\Filament\Admin\Resources\InventoryTransactions\Schemas;
-
 use Filament\Schemas\Schema;
-
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
-
-use Closure;
 
 class InventoryTransactionForm
 {
@@ -34,18 +29,6 @@ class InventoryTransactionForm
                     ->required()
                     ->numeric()
                     ->minValue(0.01)
-                    ->rules([
-                        function () {
-                            return function (string $attribute, $value, Closure $fail, $get) {
-                                if ($get('tipoMovimiento') === 'Salida') {
-                                    $inventory = \App\Models\Inventory::where('product_id', $get('product_id'))->first();
-                                    if (!$inventory || $inventory->cantidadDisponible < $value) {
-                                        $fail('La cantidad solicitada supera el inventario disponible.');
-                                    }
-                                }
-                            };
-                        },
-                    ])
                     ->label('Cantidad'),
                 DateTimePicker::make('fechaMovimiento')
                     ->required()

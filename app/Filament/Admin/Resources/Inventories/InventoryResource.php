@@ -21,6 +21,9 @@ class InventoryResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'id';
+    protected static ?string $navigationLabel = 'Inventarios';
+    protected static ?string $modelLabel = 'Inventario';
+    protected static ?string $pluralModelLabel = 'Inventarios';
 
     public static function form(Schema $schema): Schema
     {

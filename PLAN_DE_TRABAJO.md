@@ -1,5 +1,4 @@
 # Plan de Trabajo – Sistema de Inventario GAAF UDI
-
 Hoja de ruta viva que consolida el análisis del stack actual, las dependencias instaladas y el avance por módulo. Las casillas marcadas (`[x]`) indican entregables ya cubiertos en el código; las pendientes (`[ ]`) siguen en ejecución.
 
 ## 0. Diagnóstico del Proyecto y Dependencias
@@ -10,38 +9,41 @@ Hoja de ruta viva que consolida el análisis del stack actual, las dependencias 
 
 ## 1. Panel de Administración (CRUD y Dashboard)
 - [x] Panel de administración base generado, login protegido y recursos auto-descubiertos.
-- [ ] Dashboard con widgets de stock, alertas y últimas transacciones.
-- [ ] Recursos CRUD para Productos, Categorías, Inventario y Reportes (formularios, tablas, filtros).
+- [x] Dashboard con widgets: KPIs (entradas/salidas/productos activos), últimos movimientos, categorías, stock disponible y actividad reciente.
+- [x] Recursos CRUD para Productos, Categorías, Inventario y Movimientos con formularios, tablas y filtros.
 - [ ] Acciones masivas y atajos (entradas/salidas) dentro de cada recurso.
 
 ## 2. Roles y Permisos
 - [x] Instalación de Spatie Permission + Filament Shield y publicación de migraciones/config.
 - [x] UserResource actualizado con jerarquía y restricciones (solo ve/edita roles inferiores).
-- [ ] Migraciones + seeders para roles base: `super_admin`, `admin`, `supervisor`, `empleado`.
-- [ ] Sincronización de permisos con Shield (generación de policies, asignación inicial).
+- [x] Roles base configurados: `super_admin`, `admin`, `user`.
+- [x] Sincronización de permisos con Shield: super_admin acceso total, admin sin gestión de usuarios/roles, user solo lectura de inventarios y reportes.
 
 ## 3. Categorías
-- [x] Modelo y migración generados (techo estructural).
-- [ ] Definir campos (`nombre`, `descripcion`, estado) y relaciones con Productos.
-- [ ] CRUD en Filament con validaciones, filtros y métricas por categoría.
+- [x] Modelo y migración generados.
+- [x] CRUD en Filament con campos nombre, descripcion, estado y relaciones con Productos.
+- [ ] Filtros avanzados y métricas por categoría.
 
 ## 4. Productos
 - [x] Modelo y migración scaffoldeados.
-- [ ] Formularios completos (nombre, descripción, categoría, precios, stock, proveedor) con reglas.
+- [x] Formularios completos con relación a categorías.
 - [ ] Acciones de ajuste de stock, badges por estado y filtros avanzados.
 
 ## 5. Inventario (Entradas / Salidas)
-- [x] Modelo `InventoryTransaction` y migración inicial creados.
-- [ ] Campos definitivos (tipo, fecha, usuario, cantidades, notas) y lógica de impacto en stock.
-- [ ] Acciones Filament para registrar movimientos y bitácora filtrable.
+- [x] Modelo `InventoryTransaction` y migración creados.
+- [x] Lógica de impacto en stock implementada (evento booted en modelo).
+- [x] Módulo de inventario con búsqueda por producto, filtro por categoría y columna de categoría visible.
+- [x] Movimientos con tipo Entrada, Salida y Ajuste registrables desde Inventory Transactions.
+- [ ] Bitácora filtrable y alertas de stock bajo.
 
 ## 6. Reportes y Exportaciones
 - [x] Dependencias de Excel y PDF instaladas y configuraciones publicadas.
-- [ ] Listados con exportación directa (CSV/XLSX) y plantillas PDF (ingresos, salidas, inventario crítico).
-- [ ] Automatizar alertas/exportes programados si el negocio lo requiere.
+- [ ] Listados con exportación directa (CSV/XLSX) y plantillas PDF.
+- [ ] Automatizar alertas/exportes programados.
 
 ## 7. UI/UX
 - [x] Panel responsive de Filament con navegación por permisos.
+- [x] Navegación en español (labels de recursos traducidos).
 - [ ] Personalización visual (branding, colores corporativos, logotipo).
 - [ ] Notificaciones contextuales y alertas de stock bajo.
 
